@@ -25,11 +25,12 @@ class clsSimpleGameEngine:
 
 		pygame.init()
 		pygame.mixer.init()
-		pygame.display.set_caption(strGameName)		
+		pygame.display.set_caption(strGameName)	
+
 		self.screen = pygame.display.set_mode((intWindowWidth, intWindowHeight), RESIZABLE)
 		
 		# =============================================================================
-		# Initialize autoscaler
+		# Initialize autoscaler variables
 		# =============================================================================
 		
 		self.decScaleWidth = 1.0
@@ -39,23 +40,27 @@ class clsSimpleGameEngine:
 		self.decOffsetHeight = 0.0;
 		self.intGameWidth = float(intGameWidth)
 		self.intGameHeight = float(intGameHeight)
-		
+
+		# =============================================================================
 		# Initialize color values		
+		# =============================================================================
+
 		self.colors = {}
 		self.colors["white"] = (255, 255, 255)
 		self.colors["black"] = (0, 0, 0)
 		self.colors["transparent"] = (0, 255, 255)
 		
+		# =============================================================================
 		# Container to keep resources
+		# =============================================================================
+
 		self.dicImages = {}
 		self.dicSounds = {}
 		self.dicMusic = {}
-
-
-
-
+		self.dicFonts = {}
+		
 		# =============================================================================
-		# Initialize Input Variables
+		# Initialize input variables
 		# =============================================================================
 		
 		self.intPressedQueueSize = 100
@@ -77,10 +82,13 @@ class clsSimpleGameEngine:
 		pygame.quit()
 		
 	def loadResources(self,listResources):
+
 		print("sge> Loading Resources: ",end="")
+
 		intCountImages = 0
 		intCountSounds = 0
 		intCountMusic = 0
+		intCountFonts = 0
 
 		for resources in listResources:
 			if (resources["type"] == "image"):
@@ -92,8 +100,13 @@ class clsSimpleGameEngine:
 			elif (resources["type"] == "music"):
 				intCountMusic = intCountMusic + 1
 				self.dicMusic[resources["name"]] = pygame.mixer.music.load(resources["src"])
+			elif (resources["type"] == "font"):
+				intCountFonts = intCountMusic + 1
+				self.dicFonts[resources["name"]] = pygame.font.Font(resources["src"], resources["size"])
+				self.dicFonts[resources["name"]+"_src_ref"] = resources["src"]
 
-		print("images (" + str(intCountImages) + ")" + ", sounds(" + str(intCountSounds) + ")")
+		print("images (" + str(intCountImages) + ")" + ", sounds(" + str(intCountSounds) + ")" + ", fonts(" + str(intCountFonts) + ")" )
+
 	# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	# When the screen is re-sized this function is triggered
 	# We calculate some variables to help up scale and center the whole game 
@@ -128,7 +141,6 @@ class clsSimpleGameEngine:
 	# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	# Create a function to play a previously loaded music
 	
-
 	def playMusic(self):
 		
 		pygame.mixer.music.play(-1)
@@ -136,46 +148,56 @@ class clsSimpleGameEngine:
 	# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	# Create a function to draw an image on the canvas honoring the scale
 
-	def drawImage(self, strImgObject, intOffsetX, intOffsetY, intWidth, intHeight, alpha = 255, intRotate = 0):
+	def drawImage(self, objImgObject, intOffsetX, intOffsetY, intWidth, intHeight, alpha = 255, intRotate = 0):
 
-		if (strImgObject in self.dicImages):
+		intDimW = math.ceil(intWidth*self.decScaleGame)
+		intDimH = math.ceil(intHeight*self.decScaleGame)
 
-			intDimW = math.ceil(intWidth*self.decScaleGame)
-			intDimH = math.ceil(intHeight*self.decScaleGame)
+		intOffsetWidth = 0
+		intOffsetHeight = 0
 
-			imgObjectResized = pygame.transform.scale(self.dicImages[strImgObject], (intDimW,intDimH))
+		imgObjectResized = None
 
-			intOffsetWidth = 0
-			intOffsetHeight = 0
+		if isinstance(objImgObject, str):
+			if (objImgObject in self.dicImages):
+				imgObjectResized = pygame.transform.scale(self.dicImages[objImgObject], (intDimW,intDimH))
+		else:
+			imgObjectResized = pygame.transform.scale(objImgObject, (intDimW,intDimH))
 
-			if (intRotate > 0):
-				intImgWidth, intImgHeight = imgObjectResized.get_size()
-				imgObjectResized = pygame.transform.rotate(imgObjectResized, intRotate)
-				intImgWidthAfter, intImgHeightAfter = imgObjectResized.get_size()
-				intOffsetWidth = (intImgWidth - intImgWidthAfter) / 2
-				intOffsetHeight = (intImgHeight - intImgHeightAfter) / 2
+		if (intRotate > 0):
+			intImgWidth, intImgHeight = imgObjectResized.get_size()
+			imgObjectResized = pygame.transform.rotate(imgObjectResized, intRotate)
+			intImgWidthAfter, intImgHeightAfter = imgObjectResized.get_size()
+			intOffsetWidth = (intImgWidth - intImgWidthAfter) / 2
+			intOffsetHeight = (intImgHeight - intImgHeightAfter) / 2
 
+		if (alpha != 255):
+			if (alpha > 255 or alpha < 0):
+				alpha = 255
+			else:
+				imgObjectResized.set_alpha(alpha)
 
-			if (alpha != 255):
-				if (alpha > 255 or alpha < 0):
-					alpha = 255
-				else:
-					imgObjectResized.set_alpha(alpha)
-
-			self.screen.blit(imgObjectResized, (self.decOffsetWidth + (intOffsetX*self.decScaleGame)+intOffsetWidth, self.decOffsetHeight + (intOffsetY*self.decScaleGame) + intOffsetHeight))
+		self.screen.blit(imgObjectResized, (self.decOffsetWidth + (intOffsetX*self.decScaleGame)+intOffsetWidth, self.decOffsetHeight + (intOffsetY*self.decScaleGame) + intOffsetHeight))
 
 
 	# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-	# Create a function to draw a sentence
+	# Create a function to draw a sentence using a font reference
+	# This function honors the scale
 
-	#def drawSentence(strSentence, intOffsetX, intOffsetY, intWidth, intHeight):
-	#	# Iterate through all characters
-	#	for i in range( len(strSentence) ):
-	#		if strSentence[i] in dicFont:
-	#			# screen.blit(imgObject, (100,100))
-	#			imgObjectResized = pygame.transform.scale(dicFont[strSentence[i]], (intWidth*decScaleGame,intHeight*decScaleGame))
-	#			screen.blit(imgObjectResized, (decOffsetWidth + (intOffsetX*decScaleGame) + (((intWidth*decScaleGame))*i), decOffsetHeight + (intOffsetY*decScaleGame)))
-			
+	def drawSentence(self, strFontObject, strSentence, intOffsetX, intOffsetY, strColor="white"):
+		if (strColor not in self.colors):
+			strColor = "white"
+
+		if (strFontObject in self.dicFonts):
+			imgConvertFont = self.dicFonts[strFontObject].render(self.dicFonts[strFontObject+"_src_ref"], True, self.colors[strColor])
+			rectImage = imgConvertFont.get_rect()
+			sizeImage = (rectImage.width, rectImage.height)
+			srfConvertFont = pygame.Surface(sizeImage)
+			srfConvertFont.blit(imgConvertFont,(0,0))
+			self.drawImage(srfConvertFont, intOffsetX, intOffsetY, rectImage.width, rectImage.height)
+
+			# self.screen.blit(imgConvertFont, (20, 20))
+
 	def displayClear(self):
 		self.screen.fill(self.colors["black"])
 	

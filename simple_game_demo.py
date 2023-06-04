@@ -74,6 +74,7 @@ while blnRunning:
 
 			# Draw the game title
 			objMyGame.drawImage("imgGameLogo", 1, 1, 20, 170)
+			objMyGame.drawSentence("ttfMenu", "Hello World", 20, 20)
 
 			# ================================================================|
 			# KEYBOARD INPUT METHODS
