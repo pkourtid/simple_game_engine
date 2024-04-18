@@ -29,6 +29,7 @@ class clsSimpleGameEngine:
 
 		self.screen = pygame.display.set_mode((intWindowWidth, intWindowHeight), RESIZABLE)
 		
+		
 		# =============================================================================
 		# Initialize autoscaler variables
 		# =============================================================================
@@ -48,7 +49,13 @@ class clsSimpleGameEngine:
 		self.colors = {}
 		self.colors["white"] = (255, 255, 255)
 		self.colors["black"] = (0, 0, 0)
+		self.colors["red"] = (255, 0, 0)
+		self.colors["green"] = (0, 255, 0)
+		self.colors["blue"] = (0, 0, 255)
+		self.colors["yellow"] = (255, 255, 0)
 		self.colors["transparent"] = (0, 255, 255)
+		
+		self.screen.set_colorkey(self.colors["transparent"])
 		
 		# =============================================================================
 		# Container to keep resources
@@ -148,14 +155,19 @@ class clsSimpleGameEngine:
 	# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	# Create a function to draw an image on the canvas honoring the scale
 
-	def drawImage(self, objImgObject, intOffsetX, intOffsetY, intWidth, intHeight, alpha = 255, intRotate = 0):
+	def drawImage(self, objImgObject, intOffsetX, intOffsetY, intWidth, intHeight, alpha = 255, intRotate = 0, clrColorKey=(0,255,255)):
 
+		#Calculate the size of the image based on the scale used
 		intDimW = math.ceil(intWidth*self.decScaleGame)
 		intDimH = math.ceil(intHeight*self.decScaleGame)
 
+		# These variables will used to find out the offset (left or top) for the image
 		intOffsetWidth = 0
 		intOffsetHeight = 0
 
+		# If the passed value is a string, then we will look it up in the resources dictionary
+		# Otherwise we will use it as if it was as image. In both cases we will scale the image
+		
 		imgObjectResized = None
 
 		if isinstance(objImgObject, str):
@@ -164,6 +176,7 @@ class clsSimpleGameEngine:
 		else:
 			imgObjectResized = pygame.transform.scale(objImgObject, (intDimW,intDimH))
 
+		# If the image needs to be rotated we will do so
 		if (intRotate > 0):
 			intImgWidth, intImgHeight = imgObjectResized.get_size()
 			imgObjectResized = pygame.transform.rotate(imgObjectResized, intRotate)
@@ -171,12 +184,18 @@ class clsSimpleGameEngine:
 			intOffsetWidth = (intImgWidth - intImgWidthAfter) / 2
 			intOffsetHeight = (intImgHeight - intImgHeightAfter) / 2
 
+		# Now we will apply an alpha blend value
 		if (alpha != 255):
 			if (alpha > 255 or alpha < 0):
 				alpha = 255
 			else:
 				imgObjectResized.set_alpha(alpha)
-
+				
+		# We will also set a color key. The color key will not be drawn during the blit operation
+		# Use this color for transparency
+		imgObjectResized.set_colorkey(clrColorKey)
+		
+		# Finaly blit the image to the screen
 		self.screen.blit(imgObjectResized, (self.decOffsetWidth + (intOffsetX*self.decScaleGame)+intOffsetWidth, self.decOffsetHeight + (intOffsetY*self.decScaleGame) + intOffsetHeight))
 
 
@@ -184,19 +203,21 @@ class clsSimpleGameEngine:
 	# Create a function to draw a sentence using a font reference
 	# This function honors the scale
 
-	def drawSentence(self, strFontObject, strSentence, intOffsetX, intOffsetY, strColor="white"):
+	def drawSentence(self, strFontObject, strSentence, intOffsetX, intOffsetY, strColor="white", alphaFont = 255, intRotateFont = 0):
+	
+		# If a color was not specified, set it to white
 		if (strColor not in self.colors):
 			strColor = "white"
 
+		# Convert the string passed to an image and then draw it to the screen
 		if (strFontObject in self.dicFonts):
-			imgConvertFont = self.dicFonts[strFontObject].render(self.dicFonts[strFontObject+"_src_ref"], True, self.colors[strColor])
+			imgConvertFont = self.dicFonts[strFontObject].render(strSentence, True, self.colors[strColor])
 			rectImage = imgConvertFont.get_rect()
 			sizeImage = (rectImage.width, rectImage.height)
 			srfConvertFont = pygame.Surface(sizeImage)
 			srfConvertFont.blit(imgConvertFont,(0,0))
-			self.drawImage(srfConvertFont, intOffsetX, intOffsetY, rectImage.width, rectImage.height)
+			self.drawImage(srfConvertFont, intOffsetX, intOffsetY, rectImage.width, rectImage.height, clrColorKey=(0,0,0), alpha=alphaFont, intRotate=intRotateFont)
 
-			# self.screen.blit(imgConvertFont, (20, 20))
 
 	def displayClear(self):
 		self.screen.fill(self.colors["black"])

@@ -30,6 +30,7 @@ tmrCheckCombo.resetTimer()
 # Game Variables
 
 intGameState = -1 # Indicates what state the game is in
+intRotateAngle = 0
 
 # ===========================================================================
 # Define Game Functions
@@ -74,7 +75,12 @@ while blnRunning:
 
 			# Draw the game title
 			objMyGame.drawImage("imgGameLogo", 1, 1, 20, 170)
-			objMyGame.drawSentence("ttfMenu", "Hello World", 20, 20)
+			
+			intRotateAngle = intRotateAngle + 1
+			if (intRotateAngle > 360):
+				intRotateAngle = 0
+			objMyGame.drawSentence("ttfMenu", "This is a demo...", 0, 20, "yellow", intRotateFont=intRotateAngle)
+			objMyGame.drawSentence("ttfMenu", "Panagiotis", 100, 100, "red", intRotateFont=intRotateAngle)
 
 			# ================================================================|
 			# KEYBOARD INPUT METHODS
